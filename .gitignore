@@ -137,3 +137,17 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
+# Large binaries and installers
+*.zip
+awscliv2.zip
+terraform_*.zip
+
+# AWS CLI
+aws/

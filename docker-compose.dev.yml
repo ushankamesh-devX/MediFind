@@ -1,0 +1,51 @@
+version: '3.8'
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    stdin_open: true
+    tty: true
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    environment:
+      - MYSQL_ROOT_PASSWORD=@Kamesh9396164
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: npm run dev
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: "@Kamesh9396164"
+      MYSQL_DATABASE: healthdb
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p@Kamesh9396164"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  mysql-data:

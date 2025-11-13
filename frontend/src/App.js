@@ -1,6 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import axios from 'axios';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Header from './components/global/Header';
 
 function App() {
   const [symptoms, setSymptoms] = useState([]);
@@ -13,6 +18,38 @@ function App() {
   const [authError, setAuthError] = useState('');
   const [userEmail, setUserEmail] = useState('');
 
+  // Get authorization headers
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    };
+  };
+
+  // Handle logout
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userEmail');
+    setIsLoggedIn(false);
+    setUserEmail('');
+    setSymptoms([]);
+    setShowAuthModal(true);
+  }, []);
+
+  // Fetch symptoms (protected)
+  const fetchSymptoms = useCallback(() => {
+    axios.get('http://localhost:5000/symptoms', getAuthHeaders())
+      .then(res => setSymptoms(res.data))
+      .catch(err => {
+        console.error(err);
+        if (err.response?.status === 401) {
+          handleLogout();
+        }
+      });
+  }, [handleLogout]);
+
   // Check if user is already logged in on mount
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -24,29 +61,7 @@ function App() {
     } else {
       setShowAuthModal(true);
     }
-  }, []);
-
-  // Get authorization headers
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    };
-  };
-
-  // Fetch symptoms (protected)
-  const fetchSymptoms = () => {
-    axios.get('http://localhost:5000/symptoms', getAuthHeaders())
-      .then(res => setSymptoms(res.data))
-      .catch(err => {
-        console.error(err);
-        if (err.response?.status === 401) {
-          handleLogout();
-        }
-      });
-  };
+  }, [fetchSymptoms]);
 
   // Add symptom (protected)
   const addSymptom = () => {
@@ -113,16 +128,6 @@ function App() {
     }
   };
 
-  // Handle logout
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userEmail');
-    setIsLoggedIn(false);
-    setUserEmail('');
-    setSymptoms([]);
-    setShowAuthModal(true);
-  };
-
   // Toggle between login and register
   const toggleAuthMode = () => {
     setIsRegistering(!isRegistering);
@@ -131,87 +136,47 @@ function App() {
     setPassword('');
   };
 
+  // Handle login success
+  const handleLoginSuccess = (user) => {
+    setIsLoggedIn(true);
+    setUserEmail(user.email);
+    fetchSymptoms();
+  };
+
+  // Protected Route Component
+  const ProtectedRoute = ({ children }) => {
+    const token = localStorage.getItem('token');
+    return token ? children : <Navigate to="/login" />;
+  };
+
   return (
-    <div className="App">
-      {/* Auth Modal */}
-      {showAuthModal && !isLoggedIn && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h2>{isRegistering ? 'Register' : 'Login'}</h2>
-            <form onSubmit={isRegistering ? handleRegister : handleLogin}>
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              <input
-                type="password"
-                placeholder="Password (min 6 characters)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-              {authError && <p className="error">{authError}</p>}
-              <button type="submit">
-                {isRegistering ? 'Register' : 'Login'}
-              </button>
-            </form>
-            <p className="toggle-auth">
-              {isRegistering ? 'Already have an account? ' : "Don't have an account? "}
-              <span onClick={toggleAuthMode}>
-                {isRegistering ? 'Login' : 'Register'}
-              </span>
-            </p>
-            <p className="demo-credentials">
-              <small>Demo: user@example.com / password</small>
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Main App (only visible when logged in) */}
-      {isLoggedIn && (
-        <>
-          <div className="header">
-            <h1>My Health Tracker</h1>
-            <div className="user-info">
-              <span>Welcome, {userEmail}</span>
-              <button onClick={handleLogout} className="logout-btn">Logout</button>
-            </div>
-          </div>
-          
-          <div className="input-section">
-            <input
-              type="text"
-              value={newSymptom}
-              onChange={(e) => setNewSymptom(e.target.value)}
-              placeholder="Log a symptom (e.g., Headache)"
-              onKeyPress={(e) => e.key === 'Enter' && addSymptom()}
-            />
-            <button onClick={addSymptom}>Add Symptom</button>
-          </div>
-
-          <div className="symptoms-list">
-            <h3>Your Symptoms</h3>
-            {symptoms.length === 0 ? (
-              <p className="no-symptoms">No symptoms logged yet. Start tracking your health!</p>
-            ) : (
-              <ul>
-                {symptoms.map(symptom => (
-                  <li key={symptom.id}>
-                    <span className="symptom-text">{symptom.text}</span>
-                    <span className="symptom-date">{symptom.date}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </>
-      )}
-    </div>
+    <Router>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
+        <Route path="/register" element={<Register />} />
+        
+        {/* Protected Routes */}
+        <Route 
+          path="/" 
+          element={
+            <ProtectedRoute>
+              <div>
+                <Header 
+                  isLoggedIn={isLoggedIn}
+                  userEmail={userEmail}
+                  onLogout={handleLogout}
+                />
+                <Home />
+              </div>
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Redirect to home by default */}
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </Router>
   );
 }
 
