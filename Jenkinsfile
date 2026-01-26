@@ -41,8 +41,8 @@ pipeline {
 
                 echo 'Tagging and pushing images...'
                 sh """
-                    docker tag health-app-frontend ${IMAGE_NAME}/medifind-frontend:${IMAGE_TAG}
-                    docker tag health-app-backend ${IMAGE_NAME}/medifind-backend:${IMAGE_TAG}
+                    docker tag medifind-ci-cd-frontend ${IMAGE_NAME}/medifind-frontend:${IMAGE_TAG}
+                    docker tag medifind-ci-cd-backend ${IMAGE_NAME}/medifind-backend:${IMAGE_TAG}
 
                     docker push ${IMAGE_NAME}/medifind-frontend:${IMAGE_TAG}
                     docker push ${IMAGE_NAME}/medifind-backend:${IMAGE_TAG}
