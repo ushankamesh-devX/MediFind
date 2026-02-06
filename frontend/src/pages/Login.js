@@ -48,7 +48,7 @@ function Login({ onLoginSuccess }) {
               </svg>
             </div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              MediFind DevopsProject
+              MediFind
             </h1>
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Welcome Back</h2>
