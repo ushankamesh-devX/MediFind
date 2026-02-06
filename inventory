@@ -1,0 +1,9 @@
+[medifind_servers]
+54.92.192.165
+# Replace with your EC2 public IP after running terraform apply
+# Example: 54.123.45.67
+
+[medifind_servers:vars]
+ansible_user=ubuntu
+ansible_ssh_private_key_file=~/medifind-devops.pem
+ansible_python_interpreter=/usr/bin/python3

@@ -1,0 +1,112 @@
+---
+- name: Configure EC2 Server and Deploy MediFind Application
+  hosts: all
+  become: yes
+  vars:
+    docker_compose_version: "2.24.5"
+    app_directory: "/home/ubuntu/medifind"
+    
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - python3-pip
+        state: present
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install Docker
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: yes
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    - name: Install Python Docker library
+      pip:
+        name: docker
+        state: present
+        executable: pip3
+
+    - name: Install Docker Compose
+      get_url:
+        url: "https://github.com/docker/compose/releases/download/v{{ docker_compose_version }}/docker-compose-linux-x86_64"
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
+
+    - name: Create application directory
+      file:
+        path: "{{ app_directory }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy docker-compose.prod.yml to server
+      copy:
+        src: ./docker-compose.prod.yml
+        dest: "{{ app_directory }}/docker-compose.yml"
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Pull latest Docker images
+      shell: docker-compose pull
+      args:
+        chdir: "{{ app_directory }}"
+      become_user: ubuntu
+
+    - name: Stop existing containers
+      shell: docker-compose down
+      args:
+        chdir: "{{ app_directory }}"
+      become_user: ubuntu
+      ignore_errors: yes
+
+    - name: Start Docker containers
+      shell: docker-compose up -d
+      args:
+        chdir: "{{ app_directory }}"
+      become_user: ubuntu
+
+    - name: Wait for application to be ready
+      wait_for:
+        port: 5000
+        delay: 10
+        timeout: 60
+
+    - name: Display deployment status
+      debug:
+        msg: "MediFind application deployed successfully! Access at http://{{ ansible_host }}:3000"
