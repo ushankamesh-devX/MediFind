@@ -66,8 +66,8 @@ function App() {
   // Add symptom (protected)
   const addSymptom = () => {
     if (newSymptom.trim()) {
-      axios.post('http://localhost:5000/symptoms', 
-        { text: newSymptom }, 
+      axios.post('http://localhost:5000/symptoms',
+        { text: newSymptom },
         getAuthHeaders()
       )
         .then(() => {
@@ -97,13 +97,13 @@ function App() {
       const { token, user } = response.data;
       localStorage.setItem('token', token);
       localStorage.setItem('userEmail', user.email);
-      
+
       setIsLoggedIn(true);
       setUserEmail(user.email);
       setShowAuthModal(false);
       setEmail('');
       setPassword('');
-      
+
       fetchSymptoms();
     } catch (err) {
       setAuthError(err.response?.data?.error || 'Login failed');
@@ -155,24 +155,22 @@ function App() {
         {/* Public Routes */}
         <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
         <Route path="/register" element={<Register />} />
-        
-        {/* Protected Routes */}
-        <Route 
-          path="/" 
+
+        {/* Home Route - Now Public */}
+        <Route
+          path="/"
           element={
-            <ProtectedRoute>
-              <div>
-                <Header 
-                  isLoggedIn={isLoggedIn}
-                  userEmail={userEmail}
-                  onLogout={handleLogout}
-                />
-                <Home />
-              </div>
-            </ProtectedRoute>
-          } 
+            <div>
+              <Header
+                isLoggedIn={isLoggedIn}
+                userEmail={userEmail}
+                onLogout={handleLogout}
+              />
+              <Home />
+            </div>
+          }
         />
-        
+
         {/* Redirect to home by default */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
