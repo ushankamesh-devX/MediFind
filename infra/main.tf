@@ -259,13 +259,9 @@ resource "aws_instance" "app_server" {
   key_name                    = aws_key_pair.deployer.key_name
   associate_public_ip_address = true
 
-  user_data = <<-EOF
               #!/bin/bash
               apt-get update
-              apt-get install -y docker.io docker-compose
-              systemctl start docker
-              systemctl enable docker
-              usermod -aG docker ubuntu
+              # Docker installation is handled by Ansible to avoid conflicts
               EOF
 
   tags = {
