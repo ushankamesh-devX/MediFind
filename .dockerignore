@@ -1,0 +1,94 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+Jenkinsfile
+.jenkins
+
+# Documentation
+README.md
+DOCKER_DEV_SETUP.md
+docs/
+*.md
+LICENSE
+
+# Node modules (will be installed during build)
+node_modules
+npm-debug.log
+yarn-error.log
+yarn.log
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.env
+
+# IDE and Editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Testing
+coverage
+.nyc_output
+*.test.js
+*.spec.js
+__tests__
+test/
+tests/
+
+# Build artifacts (frontend)
+build/
+dist/
+.next/
+out/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Infrastructure as Code
+infra/
+*.tf
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# Docker files
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# AWS
+awscliv2.zip
+*.pem
+*.key
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Misc
+*.zip
+*.tar.gz
+*.rar

@@ -19,18 +19,18 @@ const retryDelay = 3000; // 3 seconds
 
 function connectWithRetry(retries = 0) {
   db = mysql.createConnection({
-    host: 'db',
-    user: 'root',                     // Using root user
-    password: '@Kamesh9396164',       // Root password from docker-compose
-    database: 'healthdb'
+    host: process.env.DB_HOST || 'db',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '@Kamesh9396164',
+    database: process.env.DB_NAME || 'healthdb'
   });
 
   db.connect(err => {
     if (err) {
       console.error(`MySQL Connection Failed (attempt ${retries + 1}/${maxRetries}):`, err.message);
-      
+
       if (retries < maxRetries) {
-        console.log(`Retrying in ${retryDelay/1000} seconds...`);
+        console.log(`Retrying in ${retryDelay / 1000} seconds...`);
         setTimeout(() => connectWithRetry(retries + 1), retryDelay);
       } else {
         console.error('Max retries reached. Exiting...');
@@ -38,9 +38,9 @@ function connectWithRetry(retries = 0) {
       }
       return;
     }
-    
+
     console.log('MySQL Connected!');
-    
+
     // Create users table
     const createUsersTable = `
       CREATE TABLE IF NOT EXISTS users (
@@ -56,7 +56,7 @@ function connectWithRetry(retries = 0) {
         console.error('Users table creation failed:', err.message);
       } else {
         console.log('Users table ready');
-        
+
         // Create a default test user (email: user@example.com, password: password)
         const hashedPassword = bcrypt.hashSync('password', 10);
         db.query(
@@ -72,7 +72,7 @@ function connectWithRetry(retries = 0) {
         );
       }
     });
-    
+
     // Create symptoms table with user_id reference
     const createSymptomsTable = `
       CREATE TABLE IF NOT EXISTS symptoms (
@@ -111,7 +111,7 @@ connectWithRetry();
 const authenticateToken = (req, res, next) => {
   const authHeader = req.header('Authorization');
   const token = authHeader && authHeader.replace('Bearer ', '');
-  
+
   if (!token) {
     return res.status(401).json({ error: 'Access denied. No token provided.' });
   }
@@ -142,7 +142,7 @@ app.post('/register', (req, res) => {
   }
 
   const { email, password } = req.body;
-  
+
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' });
   }
@@ -165,10 +165,10 @@ app.post('/register', (req, res) => {
         console.error('Registration error:', err);
         return res.status(500).json({ error: 'Failed to register user' });
       }
-      
-      res.status(201).json({ 
+
+      res.status(201).json({
         message: 'User registered successfully',
-        userId: result.insertId 
+        userId: result.insertId
       });
     }
   );
@@ -232,7 +232,7 @@ app.get('/symptoms', authenticateToken, (req, res) => {
   if (!db) {
     return res.status(503).json({ error: 'Database not ready' });
   }
-  
+
   // Get symptoms only for the authenticated user
   db.query(
     'SELECT * FROM symptoms WHERE user_id = ? ORDER BY date DESC',
@@ -252,14 +252,14 @@ app.post('/symptoms', authenticateToken, (req, res) => {
   if (!db) {
     return res.status(503).json({ error: 'Database not ready' });
   }
-  
+
   const { text } = req.body;
   if (!text) {
     return res.status(400).json({ error: 'Text is required' });
   }
 
   const date = new Date().toLocaleDateString();
-  
+
   // Add symptom with the authenticated user's ID
   db.query(
     'INSERT INTO symptoms (text, date, user_id) VALUES (?, ?, ?)',
@@ -269,11 +269,11 @@ app.post('/symptoms', authenticateToken, (req, res) => {
         console.error('Insert error:', err);
         return res.status(500).json({ error: 'Failed to save symptom' });
       }
-      res.json({ 
-        id: result.insertId, 
-        text, 
+      res.json({
+        id: result.insertId,
+        text,
         date,
-        user_id: req.user.id 
+        user_id: req.user.id
       });
     }
   );

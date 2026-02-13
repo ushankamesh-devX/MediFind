@@ -2,65 +2,66 @@ pipeline {
     agent any
 
     environment {
-        // Replace with your Docker Hub username
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
-        IMAGE_NAME = 'ushankamesh33'  // Your Docker Hub username
-        IMAGE_TAG = "${BUILD_NUMBER}"
+        AWS_ACCESS_KEY_ID     = credentials('aws-access-key-id')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
+        AWS_DEFAULT_REGION    = 'us-east-1'
+        DOCKER_HUB_CREDS      = credentials('docker-hub-credentials') // Username/Password
+        SSH_KEY               = credentials('medifind-ssh-key') // SSH Private Key
+        TF_VAR_ssh_public_key = credentials('medifind-ssh-public-key') // SSH Public Key content
     }
 
     stages {
         stage('Checkout') {
             steps {
-                echo 'Checking out code from GitHub...'
                 checkout scm
             }
         }
 
-        stage('Build Docker Images') {
+        stage('Infrastructure (Terraform)') {
             steps {
-                echo 'Building Docker images using docker compose...'
-                sh 'docker compose build'
+                dir('infra') {
+                    sh 'terraform init'
+                    sh 'terraform validate'
+                    // Apply changes automatically (use with caution in prod)
+                    sh 'terraform apply -auto-approve'
+                    
+                    // Extract EC2 IP for Ansible
+                    script {
+                        def ec2_ip = sh(script: "terraform output -raw ec2_public_ip", returnStdout: true).trim()
+                        env.EC2_IP = ec2_ip
+                    }
+                }
             }
         }
 
-        stage('Test App (Smoke Test)') {
+        stage('Build & Push Docker Images') {
             steps {
-                echo 'Starting containers to test...'
-                sh 'docker compose up -d'
-                sh 'sleep 15'  // Wait for services to be fully ready
-                sh 'curl -f http://localhost:3000 || exit 1'  // Frontend
-                sh 'curl -f http://localhost:5000/health || exit 1'  // Backend health endpoint
-                sh 'docker compose down'
+                script {
+                    docker.withRegistry('', 'docker-hub-credentials') {
+                        def frontendImage = docker.build("ushankamesh33/medifind-frontend:latest", "./frontend")
+                        def backendImage = docker.build("ushankamesh33/medifind-backend:latest", "./backend")
+                        
+                        frontendImage.push()
+                        backendImage.push()
+                    }
+                }
             }
         }
 
-        stage('Push to Docker Hub') {
+        stage('Deploy (Ansible)') {
             steps {
-                echo 'Logging in to Docker Hub...'
-                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
-
-                echo 'Tagging and pushing images...'
-                sh """
-                    docker tag medifind-ci-cd-frontend ${IMAGE_NAME}/medifind-frontend:${IMAGE_TAG}
-                    docker tag medifind-ci-cd-backend ${IMAGE_NAME}/medifind-backend:${IMAGE_TAG}
-
-                    docker push ${IMAGE_NAME}/medifind-frontend:${IMAGE_TAG}
-                    docker push ${IMAGE_NAME}/medifind-backend:${IMAGE_TAG}
-                """
+                dir('infra/ansible') {
+                    // Create dynamic inventory
+                    sh "echo '[webservers]\n${env.EC2_IP}' > inventory.ini"
+                    
+                    // Run Playbook
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
+                        withCredentials([file(credentialsId: 'medifind-ssh-key', variable: 'SSH_KEY_FILE')]) {
+                             sh "ansible-playbook -i inventory.ini deploy.yml --private-key ${SSH_KEY_FILE} --extra-vars 'DOCKER_HUB_USERNAME=${DOCKER_HUB_USERNAME} DOCKER_HUB_PASSWORD=${DOCKER_HUB_PASSWORD}'"
+                        }
+                    }
+                }
             }
-        }
-    }
-
-    post {
-        always {
-            sh 'docker compose down || true'
-            sh 'docker system prune -f || true'
-        }
-        success {
-            echo 'Pipeline succeeded! Images pushed to Docker Hub.'
-        }
-        failure {
-            echo 'Pipeline failed!'
         }
     }
 }

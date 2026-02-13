@@ -131,13 +131,27 @@ resource "aws_route_table_association" "private" {
   route_table_id = aws_route_table.private.id
 }
 
-# ==================== SECURITY GROUPS ====================
+# ==================== EC2 INSTANCE ====================
 
-# ECS Security Group - Allow direct public access
-resource "aws_security_group" "ecs" {
-  name        = "${var.project_name}-${var.environment}-ecs-sg"
-  description = "Security group for ECS tasks"
+# Key Pair for SSH Access
+resource "aws_key_pair" "deployer" {
+  key_name   = "${var.project_name}-${var.environment}-key"
+  public_key = var.ssh_public_key
+}
+
+# EC2 Security Group - Allow SSH and HTTP
+resource "aws_security_group" "ec2" {
+  name        = "${var.project_name}-${var.environment}-ec2-sg"
+  description = "Security group for EC2 instance"
   vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "SSH from anywhere"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   ingress {
     description = "HTTP from anywhere (Frontend)"
@@ -164,23 +178,23 @@ resource "aws_security_group" "ecs" {
   }
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-ecs-sg"
+    Name        = "${var.project_name}-${var.environment}-ec2-sg"
     Environment = var.environment
   }
 }
 
-# RDS Security Group
+# RDS Security Group - Update to allow access from EC2 SG
 resource "aws_security_group" "rds" {
   name        = "${var.project_name}-${var.environment}-rds-sg"
   description = "Security group for RDS MySQL"
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    description     = "MySQL from ECS"
+    description     = "MySQL from EC2"
     from_port       = 3306
     to_port         = 3306
     protocol        = "tcp"
-    security_groups = [aws_security_group.ecs.id]
+    security_groups = [aws_security_group.ec2.id]
   }
 
   egress {
@@ -234,303 +248,28 @@ resource "aws_db_instance" "mysql" {
   }
 }
 
-# ==================== ECR REPOSITORIES ====================
+# ==================== EC2 INSTANCE RESOURCE ====================
 
-resource "aws_ecr_repository" "frontend" {
-  name                 = "${var.project_name}-frontend"
-  image_tag_mutability = "MUTABLE"
+resource "aws_instance" "app_server" {
+  ami           = "ami-0c7217cdde317cfec" # Ubuntu 22.04 LTS in us-east-1 (Verify region!)
+  instance_type = "t2.micro" # Free tier eligible
+  
+  subnet_id                   = aws_subnet.public[0].id
+  vpc_security_group_ids      = [aws_security_group.ec2.id]
+  key_name                    = aws_key_pair.deployer.key_name
+  associate_public_ip_address = true
 
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-
-  tags = {
-    Name        = "${var.project_name}-frontend"
-    Environment = var.environment
-  }
-}
-
-resource "aws_ecr_repository" "backend" {
-  name                 = "${var.project_name}-backend"
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
+  user_data = <<-EOF
+              #!/bin/bash
+              apt-get update
+              apt-get install -y docker.io docker-compose
+              systemctl start docker
+              systemctl enable docker
+              usermod -aG docker ubuntu
+              EOF
 
   tags = {
-    Name        = "${var.project_name}-backend"
-    Environment = var.environment
-  }
-}
-
-# ECR Lifecycle Policies
-resource "aws_ecr_lifecycle_policy" "frontend" {
-  repository = aws_ecr_repository.frontend.name
-
-  policy = jsonencode({
-    rules = [{
-      rulePriority = 1
-      description  = "Keep last 5 images"
-      selection = {
-        tagStatus     = "any"
-        countType     = "imageCountMoreThan"
-        countNumber   = 5
-      }
-      action = {
-        type = "expire"
-      }
-    }]
-  })
-}
-
-resource "aws_ecr_lifecycle_policy" "backend" {
-  repository = aws_ecr_repository.backend.name
-
-  policy = jsonencode({
-    rules = [{
-      rulePriority = 1
-      description  = "Keep last 5 images"
-      selection = {
-        tagStatus     = "any"
-        countType     = "imageCountMoreThan"
-        countNumber   = 5
-      }
-      action = {
-        type = "expire"
-      }
-    }]
-  })
-}
-
-# ==================== ECS CLUSTER ====================
-
-resource "aws_ecs_cluster" "main" {
-  name = "${var.project_name}-${var.environment}-cluster"
-
-  setting {
-    name  = "containerInsights"
-    value = "disabled"  # Disabled for cost savings
-  }
-
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-cluster"
-    Environment = var.environment
-  }
-}
-
-# CloudWatch Log Groups
-resource "aws_cloudwatch_log_group" "frontend" {
-  name              = "/ecs/${var.project_name}-${var.environment}-frontend"
-  retention_in_days = 7
-
-  tags = {
-    Name        = "${var.project_name}-frontend-logs"
-    Environment = var.environment
-  }
-}
-
-resource "aws_cloudwatch_log_group" "backend" {
-  name              = "/ecs/${var.project_name}-${var.environment}-backend"
-  retention_in_days = 7
-
-  tags = {
-    Name        = "${var.project_name}-backend-logs"
-    Environment = var.environment
-  }
-}
-
-# ==================== IAM ROLES ====================
-
-# ECS Task Execution Role
-resource "aws_iam_role" "ecs_task_execution" {
-  name = "${var.project_name}-${var.environment}-ecs-task-execution-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "ecs-tasks.amazonaws.com"
-      }
-    }]
-  })
-
-  tags = {
-    Name        = "${var.project_name}-ecs-task-execution-role"
-    Environment = var.environment
-  }
-}
-
-resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
-  role       = aws_iam_role.ecs_task_execution.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
-
-# ECS Task Role
-resource "aws_iam_role" "ecs_task" {
-  name = "${var.project_name}-${var.environment}-ecs-task-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "ecs-tasks.amazonaws.com"
-      }
-    }]
-  })
-
-  tags = {
-    Name        = "${var.project_name}-ecs-task-role"
-    Environment = var.environment
-  }
-}
-
-# ==================== ECS TASK DEFINITIONS ====================
-
-resource "aws_ecs_task_definition" "frontend" {
-  family                   = "${var.project_name}-${var.environment}-frontend"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = var.frontend_cpu
-  memory                   = var.frontend_memory
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
-  task_role_arn            = aws_iam_role.ecs_task.arn
-
-  container_definitions = jsonencode([{
-    name      = "frontend"
-    image     = var.frontend_image
-    essential = true
-    portMappings = [{
-      containerPort = 80
-      protocol      = "tcp"
-    }]
-    logConfiguration = {
-      logDriver = "awslogs"
-      options = {
-        "awslogs-group"         = aws_cloudwatch_log_group.frontend.name
-        "awslogs-region"        = var.aws_region
-        "awslogs-stream-prefix" = "ecs"
-      }
-    }
-  }])
-
-  tags = {
-    Name        = "${var.project_name}-frontend-task"
-    Environment = var.environment
-  }
-}
-
-resource "aws_ecs_task_definition" "backend" {
-  family                   = "${var.project_name}-${var.environment}-backend"
-  network_mode             = "awsvpc"
-  requires_compatibilities = ["FARGATE"]
-  cpu                      = var.backend_cpu
-  memory                   = var.backend_memory
-  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
-  task_role_arn            = aws_iam_role.ecs_task.arn
-
-  container_definitions = jsonencode([{
-    name      = "backend"
-    image     = var.backend_image
-    essential = true
-    portMappings = [{
-      containerPort = 5000
-      protocol      = "tcp"
-    }]
-    environment = [
-      {
-        name  = "DB_HOST"
-        value = aws_db_instance.mysql.address
-      },
-      {
-        name  = "DB_USER"
-        value = var.db_username
-      },
-      {
-        name  = "DB_PASSWORD"
-        value = var.db_password
-      },
-      {
-        name  = "DB_NAME"
-        value = var.db_name
-      },
-      {
-        name  = "JWT_SECRET"
-        value = var.jwt_secret
-      },
-      {
-        name  = "PORT"
-        value = "5000"
-      }
-    ]
-    logConfiguration = {
-      logDriver = "awslogs"
-      options = {
-        "awslogs-group"         = aws_cloudwatch_log_group.backend.name
-        "awslogs-region"        = var.aws_region
-        "awslogs-stream-prefix" = "ecs"
-      }
-    }
-    healthCheck = {
-      command     = ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
-      interval    = 30
-      timeout     = 5
-      retries     = 3
-      startPeriod = 60
-    }
-  }])
-
-  tags = {
-    Name        = "${var.project_name}-backend-task"
-    Environment = var.environment
-  }
-}
-
-# ==================== NO LOAD BALANCER ====================
-# Load Balancer removed - ECS tasks will have public IPs
-
-# ==================== ECS SERVICES ====================
-
-resource "aws_ecs_service" "frontend" {
-  name            = "${var.project_name}-${var.environment}-frontend-service"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.frontend.arn
-  desired_count   = var.frontend_desired_count
-  launch_type     = "FARGATE"
-
-  network_configuration {
-    subnets          = aws_subnet.public[*].id  # Public subnets
-    security_groups  = [aws_security_group.ecs.id]
-    assign_public_ip = true  # Assign public IP
-  }
-
-  tags = {
-    Name        = "${var.project_name}-frontend-service"
-    Environment = var.environment
-  }
-}
-
-resource "aws_ecs_service" "backend" {
-  name            = "${var.project_name}-${var.environment}-backend-service"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.backend.arn
-  desired_count   = var.backend_desired_count
-  launch_type     = "FARGATE"
-
-  network_configuration {
-    subnets          = aws_subnet.public[*].id  # Public subnets
-    security_groups  = [aws_security_group.ecs.id]
-    assign_public_ip = true  # Assign public IP
-  }
-
-  depends_on = [aws_db_instance.mysql]
-
-  tags = {
-    Name        = "${var.project_name}-backend-service"
+    Name        = "${var.project_name}-${var.environment}-app-server"
     Environment = var.environment
   }
 }

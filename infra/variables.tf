@@ -61,54 +61,23 @@ variable "db_allocated_storage" {
   default     = 20
 }
 
-# ECS Configuration
-variable "frontend_cpu" {
-  description = "CPU units for frontend (256 = 0.25 vCPU)"
-  type        = number
-  default     = 256
-}
-
-variable "frontend_memory" {
-  description = "Memory for frontend in MB"
-  type        = number
-  default     = 512
-}
-
-variable "backend_cpu" {
-  description = "CPU units for backend (256 = 0.25 vCPU)"
-  type        = number
-  default     = 256
-}
-
-variable "backend_memory" {
-  description = "Memory for backend in MB"
-  type        = number
-  default     = 512
-}
-
-variable "frontend_desired_count" {
-  description = "Desired number of frontend tasks"
-  type        = number
-  default     = 1
-}
-
-variable "backend_desired_count" {
-  description = "Desired number of backend tasks"
-  type        = number
-  default     = 1
-}
-
-# Docker Images
-variable "frontend_image" {
-  description = "Frontend Docker image URI"
+# SSH Key
+variable "ssh_public_key" {
+  description = "Public SSH key for EC2 instance access"
   type        = string
-  default     = "ushankamesh33/medifind-frontend:latest"
 }
 
-variable "backend_image" {
-  description = "Backend Docker image URI"
+# Image Versions (Optional, for Ansible or future use)
+variable "frontend_image_tag" {
+  description = "Tag for frontend image"
   type        = string
-  default     = "ushankamesh33/medifind-backend:latest"
+  default     = "latest"
+}
+
+variable "backend_image_tag" {
+  description = "Tag for backend image"
+  type        = string
+  default     = "latest"
 }
 
 # JWT Secret

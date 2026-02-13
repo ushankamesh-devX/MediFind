@@ -1,0 +1,99 @@
+---
+- name: Deploy MediFind Application
+  hosts: webservers
+  become: yes
+  vars:
+    project_root: /home/ubuntu/medifind
+    docker_compose_version: "v2.24.5"
+  
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+        state: present
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        state: present
+
+    - name: Ensure Docker service is running
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    # Docker Compose is now a plugin 'docker-compose-plugin' in recent versions, 
+    # but for standalone we can download the binary.
+    - name: Install Docker Compose
+      get_url:
+        url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-linux-x86_64"
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
+
+    - name: Create project directory
+      file:
+        path: "{{ project_root }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy docker-compose.yml
+      copy:
+        src: ../../docker-compose.yml
+        dest: "{{ project_root }}/docker-compose.yml"
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Log in to Docker Hub
+      community.docker.docker_login:
+        username: "{{ lookup('env', 'DOCKER_HUB_USERNAME') }}"
+        password: "{{ lookup('env', 'DOCKER_HUB_PASSWORD') }}"
+      # Requires 'docker' python library on the host executing ansible if using local login,
+      # but here we want to login on the REMOTE machine.
+      # Actually, simpler to use shell for login to avoid python dependencies issues on remote for now.
+      ignore_errors: yes
+
+    - name: Log in to Docker Hub (Shell fallback)
+      shell: "echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_USERNAME --password-stdin"
+      environment:
+        DOCKER_HUB_USERNAME: "{{ lookup('env', 'DOCKER_HUB_USERNAME') }}"
+        DOCKER_HUB_PASSWORD: "{{ lookup('env', 'DOCKER_HUB_PASSWORD') }}"
+
+    - name: Pull latest images
+      shell: docker-compose pull
+      args:
+        chdir: "{{ project_root }}"
+
+    - name: Start containers
+      shell: docker-compose up -d
+      args:
+        chdir: "{{ project_root }}"
