@@ -56,7 +56,7 @@ pipeline {
                     
                     // Run Playbook
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
-                        withCredentials([file(credentialsId: 'medifind-ssh-key', variable: 'SSH_KEY_FILE')]) {
+                        withCredentials([sshUserPrivateKey(credentialsId: 'medifind-ssh-key', keyFileVariable: 'SSH_KEY_FILE', usernameVariable: 'SSH_USER')]) {
                              sh "ansible-playbook -i inventory.ini deploy.yml --private-key ${SSH_KEY_FILE} --extra-vars 'DOCKER_HUB_USERNAME=${DOCKER_HUB_USERNAME} DOCKER_HUB_PASSWORD=${DOCKER_HUB_PASSWORD}'"
                         }
                     }
