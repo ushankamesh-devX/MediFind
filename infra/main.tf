@@ -259,6 +259,7 @@ resource "aws_instance" "app_server" {
   key_name                    = aws_key_pair.deployer.key_name
   associate_public_ip_address = true
 
+  user_data = <<-EOF
               #!/bin/bash
               apt-get update
               # Docker installation is handled by Ansible to avoid conflicts
