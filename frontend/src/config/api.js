@@ -1,5 +1,5 @@
 // API Configuration
-// Use window.location.hostname to automatically use the current server's IP
-const API_BASE_URL = `http://${window.location.hostname}:5000`;
+// Use nginx proxy route /api which forwards to backend:5000
+const API_BASE_URL = `http://${window.location.hostname}/api`;
 
 export default API_BASE_URL;
