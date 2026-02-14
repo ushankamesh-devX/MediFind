@@ -1,6 +1,13 @@
 import React from 'react';
 
-function MapSection({ viewMode, setViewMode }) {
+function MapSection({ viewMode, setViewMode, pharmacies = [] }) {
+  // Calculate dynamic statistics
+  const totalPharmacies = pharmacies.length;
+  const openNow = pharmacies.filter(p => p.isOpen).length;
+  const nearest = pharmacies.length > 0
+    ? Math.min(...pharmacies.map(p => parseFloat(p.distance) || 999)).toFixed(1)
+    : '0.0';
+
   return (
     <section className="w-full bg-white shadow-md">
       <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
@@ -10,14 +17,13 @@ function MapSection({ viewMode, setViewMode }) {
             <h2 className="text-2xl font-bold text-gray-800">Nearby Pharmacies</h2>
             <p className="text-gray-600 mt-1">Find the closest pharmacies to your location</p>
           </div>
-          
+
           <div className="flex gap-2 bg-gray-100 p-1">
-            <button 
-              className={`flex items-center gap-2 px-4 py-2 font-medium transition-all duration-200 ${
-                viewMode === 'map' 
-                  ? 'bg-white text-blue-600 shadow-md' 
-                  : 'text-gray-600 hover:text-blue-600'
-              }`}
+            <button
+              className={`flex items-center gap-2 px-4 py-2 font-medium transition-all duration-200 ${viewMode === 'map'
+                ? 'bg-white text-blue-600 shadow-md'
+                : 'text-gray-600 hover:text-blue-600'
+                }`}
               onClick={() => setViewMode('map')}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -25,12 +31,11 @@ function MapSection({ viewMode, setViewMode }) {
               </svg>
               Map View
             </button>
-            <button 
-              className={`flex items-center gap-2 px-4 py-2 font-medium transition-all duration-200 ${
-                viewMode === 'list' 
-                  ? 'bg-white text-blue-600 shadow-md' 
-                  : 'text-gray-600 hover:text-blue-600'
-              }`}
+            <button
+              className={`flex items-center gap-2 px-4 py-2 font-medium transition-all duration-200 ${viewMode === 'list'
+                ? 'bg-white text-blue-600 shadow-md'
+                : 'text-gray-600 hover:text-blue-600'
+                }`}
               onClick={() => setViewMode('list')}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -123,15 +128,15 @@ function MapSection({ viewMode, setViewMode }) {
         {/* Stats Bar */}
         <div className="grid grid-cols-3 gap-4 mt-6">
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 text-center">
-            <p className="text-3xl font-bold text-blue-600">24</p>
+            <p className="text-3xl font-bold text-blue-600">{totalPharmacies}</p>
             <p className="text-sm text-gray-600 mt-1">Pharmacies Found</p>
           </div>
           <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 text-center">
-            <p className="text-3xl font-bold text-green-600">18</p>
+            <p className="text-3xl font-bold text-green-600">{openNow}</p>
             <p className="text-sm text-gray-600 mt-1">Open Now</p>
           </div>
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 text-center">
-            <p className="text-3xl font-bold text-purple-600">0.5 mi</p>
+            <p className="text-3xl font-bold text-purple-600">{nearest} km</p>
             <p className="text-sm text-gray-600 mt-1">Nearest</p>
           </div>
         </div>

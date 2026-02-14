@@ -6,6 +6,7 @@ import WelcomeSection from '../components/Home/WelcomeSection';
 import SearchSection from '../components/Home/SearchSection';
 import MapSection from '../components/Home/MapSection';
 import PharmacyList from '../components/Home/PharmacyList';
+import PharmacyCardSkeleton from '../components/Home/PharmacyCardSkeleton';
 import BottomNav from '../components/Home/BottomNav';
 
 function Home() {
@@ -98,14 +99,34 @@ function Home() {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
+        <>
+          <MapSection
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            pharmacies={[]}
+          />
+
+          <section className="w-full bg-white py-8">
+            <div className="w-full px-4 sm:px-6 lg:px-8">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-800">
+                  Loading Pharmacies...
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <PharmacyCardSkeleton key={i} />
+                ))}
+              </div>
+            </div>
+          </section>
+        </>
       ) : (
         <>
           <MapSection
             viewMode={viewMode}
             setViewMode={setViewMode}
+            pharmacies={pharmacies}
           />
 
           <PharmacyList
