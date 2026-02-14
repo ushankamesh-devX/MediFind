@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 function Header({ isLoggedIn: propIsLoggedIn, userEmail, onLogout }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -12,13 +12,13 @@ function Header({ isLoggedIn: propIsLoggedIn, userEmail, onLogout }) {
     // Check if logged in from props or localStorage
     const token = localStorage.getItem('token');
     const storedEmail = localStorage.getItem('userEmail');
-    
+
     if (propIsLoggedIn !== undefined) {
       setIsLoggedIn(propIsLoggedIn);
     } else if (token) {
       setIsLoggedIn(true);
     }
-    
+
     if (userEmail) {
       setUserName(userEmail.split('@')[0]);
     } else if (storedEmail) {
@@ -42,21 +42,24 @@ function Header({ isLoggedIn: propIsLoggedIn, userEmail, onLogout }) {
                 MediFind
               </h1>
             </div>
-            
+
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-6">
-              <a href="#home" className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200">
+              <Link to="/" className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200">
                 Home
-              </a>
-              <a href="#pharmacies" className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200">
-                Pharmacies
-              </a>
-              <a href="#medicines" className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200">
-                Medicines
-              </a>
-              <a href="#about" className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200">
+              </Link>
+              <Link to="/search" className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200">
+                Search
+              </Link>
+              <Link to="/favorites" className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200">
+                Favorites
+              </Link>
+              <Link to="/about" className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200">
                 About
-              </a>
+              </Link>
+              <Link to="/contact" className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200">
+                Contact
+              </Link>
             </nav>
           </div>
 
@@ -67,9 +70,9 @@ function Header({ isLoggedIn: propIsLoggedIn, userEmail, onLogout }) {
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <input 
-                type="text" 
-                placeholder="Search medicines..." 
+              <input
+                type="text"
+                placeholder="Search medicines..."
                 className="bg-transparent border-none outline-none ml-2 w-full text-gray-700 placeholder-gray-400"
               />
             </div>
@@ -84,7 +87,7 @@ function Header({ isLoggedIn: propIsLoggedIn, userEmail, onLogout }) {
             </button>
 
             {/* Notifications */}
-            <button 
+            <button
               className="relative p-2 text-gray-700 hover:bg-gray-100 transition-colors duration-200"
               aria-label="Notifications"
             >
@@ -96,7 +99,7 @@ function Header({ isLoggedIn: propIsLoggedIn, userEmail, onLogout }) {
 
             {/* Profile Dropdown */}
             <div className="relative">
-              <button 
+              <button
                 className="flex items-center gap-2 text-gray-700 hover:bg-gray-100 px-3 py-2 transition-colors duration-200"
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 aria-label="Profile"
@@ -137,24 +140,24 @@ function Header({ isLoggedIn: propIsLoggedIn, userEmail, onLogout }) {
                         <p className="text-xs text-gray-500 mt-1">{userEmail || localStorage.getItem('userEmail')}</p>
                       </div>
                       <div className="py-2">
-                        <a href="#profile" className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
+                        <Link to="/profile" className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
                           <span>My Profile</span>
-                        </a>
+                        </Link>
                         <a href="#orders" className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                           </svg>
                           <span>My Orders</span>
                         </a>
-                        <a href="#favorites" className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
+                        <Link to="/favorites" className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                           </svg>
                           <span>Favorites</span>
-                        </a>
+                        </Link>
                         <a href="#settings" className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -164,7 +167,7 @@ function Header({ isLoggedIn: propIsLoggedIn, userEmail, onLogout }) {
                         </a>
                       </div>
                       <div className="border-t border-gray-200">
-                        <button 
+                        <button
                           onClick={() => {
                             localStorage.removeItem('token');
                             localStorage.removeItem('userEmail');
@@ -188,7 +191,7 @@ function Header({ isLoggedIn: propIsLoggedIn, userEmail, onLogout }) {
                     <>
                       {/* Logged Out Menu */}
                       <div className="py-2">
-                        <button 
+                        <button
                           onClick={() => {
                             setIsProfileOpen(false);
                             navigate('/login');
@@ -200,7 +203,7 @@ function Header({ isLoggedIn: propIsLoggedIn, userEmail, onLogout }) {
                           </svg>
                           <span>Login</span>
                         </button>
-                        <button 
+                        <button
                           onClick={() => {
                             setIsProfileOpen(false);
                             navigate('/register');
@@ -225,7 +228,7 @@ function Header({ isLoggedIn: propIsLoggedIn, userEmail, onLogout }) {
             </div>
 
             {/* Mobile Menu Button */}
-            <button 
+            <button
               className="md:hidden p-2 text-gray-700 hover:bg-gray-100 transition-colors duration-200"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               aria-label="Menu"
@@ -242,33 +245,36 @@ function Header({ isLoggedIn: propIsLoggedIn, userEmail, onLogout }) {
         </div>
 
       </div>
-      
+
       {/* Mobile Menu */}
       {isMenuOpen && (
         <div className="md:hidden py-4 border-t border-gray-200 px-4 sm:px-6 lg:px-8">
-            <nav className="flex flex-col gap-3">
-              <a href="#home" className="text-gray-700 hover:text-blue-600 font-medium py-2 px-4 hover:bg-gray-50 transition-colors duration-200">
-                Home
-              </a>
-              <a href="#pharmacies" className="text-gray-700 hover:text-blue-600 font-medium py-2 px-4 hover:bg-gray-50 transition-colors duration-200">
-                Pharmacies
-              </a>
-              <a href="#medicines" className="text-gray-700 hover:text-blue-600 font-medium py-2 px-4 hover:bg-gray-50 transition-colors duration-200">
-                Medicines
-              </a>
-              <a href="#about" className="text-gray-700 hover:text-blue-600 font-medium py-2 px-4 hover:bg-gray-50 transition-colors duration-200">
-                About
-              </a>
-              <div className="px-4 pt-2">
-                <button className="w-full flex items-center gap-2 text-gray-700 hover:text-blue-600 py-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span className="font-medium">New York</span>
-                </button>
-              </div>
-            </nav>
+          <nav className="flex flex-col gap-3">
+            <Link to="/" className="text-gray-700 hover:text-blue-600 font-medium py-2 px-4 hover:bg-gray-50 transition-colors duration-200">
+              Home
+            </Link>
+            <Link to="/search" className="text-gray-700 hover:text-blue-600 font-medium py-2 px-4 hover:bg-gray-50 transition-colors duration-200">
+              Search
+            </Link>
+            <Link to="/favorites" className="text-gray-700 hover:text-blue-600 font-medium py-2 px-4 hover:bg-gray-50 transition-colors duration-200">
+              Favorites
+            </Link>
+            <Link to="/about" className="text-gray-700 hover:text-blue-600 font-medium py-2 px-4 hover:bg-gray-50 transition-colors duration-200">
+              About
+            </Link>
+            <Link to="/contact" className="text-gray-700 hover:text-blue-600 font-medium py-2 px-4 hover:bg-gray-50 transition-colors duration-200">
+              Contact
+            </Link>
+            <div className="px-4 pt-2">
+              <button className="w-full flex items-center gap-2 text-gray-700 hover:text-blue-600 py-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span className="font-medium">New York</span>
+              </button>
+            </div>
+          </nav>
         </div>
       )}
     </header>

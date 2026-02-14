@@ -7,7 +7,6 @@ import SearchSection from '../components/Home/SearchSection';
 import MapSection from '../components/Home/MapSection';
 import PharmacyList from '../components/Home/PharmacyList';
 import PharmacyCardSkeleton from '../components/Home/PharmacyCardSkeleton';
-import BottomNav from '../components/Home/BottomNav';
 
 function Home() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -135,8 +134,6 @@ function Home() {
           />
         </>
       )}
-
-      <BottomNav />
     </div>
   );
 }

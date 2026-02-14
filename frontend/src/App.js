@@ -4,9 +4,16 @@ import './App.css';
 import axios from 'axios';
 import API_BASE_URL from './config/api';
 import Home from './pages/Home';
+import Search from './pages/Search';
+import Favorites from './pages/Favorites';
+import Profile from './pages/Profile';
+import About from './pages/About';
+import Contact from './pages/Contact';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Header from './components/global/Header';
+import Footer from './components/global/Footer';
+import BottomNav from './components/global/BottomNav';
 
 function App() {
   const [symptoms, setSymptoms] = useState([]);
@@ -150,29 +157,54 @@ function App() {
     return token ? children : <Navigate to="/login" />;
   };
 
+  // Layout wrapper for protected pages
+  const ProtectedLayout = ({ children }) => (
+    <ProtectedRoute>
+      <div className="min-h-screen flex flex-col">
+        <Header
+          isLoggedIn={isLoggedIn}
+          userEmail={userEmail}
+          onLogout={handleLogout}
+        />
+        <main className="flex-1">
+          {children}
+        </main>
+        <Footer />
+        <BottomNav />
+      </div>
+    </ProtectedRoute>
+  );
+
+  // Public layout for About and Contact pages
+  const PublicLayout = ({ children }) => (
+    <div className="min-h-screen flex flex-col">
+      <Header
+        isLoggedIn={isLoggedIn}
+        userEmail={userEmail}
+        onLogout={handleLogout}
+      />
+      <main className="flex-1">
+        {children}
+      </main>
+      <Footer />
+      <BottomNav />
+    </div>
+  );
+
   return (
     <Router>
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/about" element={<PublicLayout><About /></PublicLayout>} />
+        <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
 
         {/* Protected Routes */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <div>
-                <Header
-                  isLoggedIn={isLoggedIn}
-                  userEmail={userEmail}
-                  onLogout={handleLogout}
-                />
-                <Home />
-              </div>
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/" element={<ProtectedLayout><Home /></ProtectedLayout>} />
+        <Route path="/search" element={<ProtectedLayout><Search /></ProtectedLayout>} />
+        <Route path="/favorites" element={<ProtectedLayout><Favorites /></ProtectedLayout>} />
+        <Route path="/profile" element={<ProtectedLayout><Profile /></ProtectedLayout>} />
 
         {/* Redirect to home by default */}
         <Route path="*" element={<Navigate to="/" />} />
