@@ -279,14 +279,16 @@ resource "aws_instance" "app_server" {
 }
 
 # Elastic IP for EC2 instance (static public IP)
-resource "aws_eip" "app_server" {
-  domain   = "vpc"
-  instance = aws_instance.app_server.id
-
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-app-eip"
-    Environment = var.environment
-  }
-
-  depends_on = [aws_internet_gateway.main]
-}
+# COMMENTED OUT: EIP already exists and is manually associated (54.224.51.39 / eipalloc-01b890b6fcbb540cd)
+# To avoid AddressLimitExceeded error, we use the existing EIP
+# resource "aws_eip" "app_server" {
+#   domain   = "vpc"
+#   instance = aws_instance.app_server.id
+#
+#   tags = {
+#     Name        = "${var.project_name}-${var.environment}-app-eip"
+#     Environment = var.environment
+#   }
+#
+#   depends_on = [aws_internet_gateway.main]
+# }
