@@ -14,7 +14,7 @@ function HeroSection() {
       <div className="relative h-full px-8 flex items-center">
         <div className="w-full md:w-1/2">
           <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
-            Find Your Medicine Here
+            Find Your Medicine Here v1.0.0
             <span className="block text-3xl md:text-4xl mt-2 text-blue-100">
               Anytime, Anywhere
             </span>
