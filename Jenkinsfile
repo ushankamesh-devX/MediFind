@@ -54,10 +54,13 @@ pipeline {
                     // Create dynamic inventory
                     sh "echo '[webservers]\n${env.EC2_IP}' > inventory.ini"
                     
+                    // Remove old SSH host key to prevent "REMOTE HOST IDENTIFICATION HAS CHANGED" error
+                    sh "ssh-keygen -f ~/.ssh/known_hosts -R ${env.EC2_IP} || true"
+                    
                     // Run Playbook
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
                         withCredentials([sshUserPrivateKey(credentialsId: 'medifind-ssh-key', keyFileVariable: 'SSH_KEY_FILE', usernameVariable: 'SSH_USER')]) {
-                             sh "ansible-playbook -i inventory.ini deploy.yml --private-key ${SSH_KEY_FILE} --extra-vars 'DOCKER_HUB_USERNAME=${DOCKER_HUB_USERNAME} DOCKER_HUB_PASSWORD=${DOCKER_HUB_PASSWORD}'"
+                             sh "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory.ini deploy.yml --private-key ${SSH_KEY_FILE} --extra-vars 'DOCKER_HUB_USERNAME=${DOCKER_HUB_USERNAME} DOCKER_HUB_PASSWORD=${DOCKER_HUB_PASSWORD}'"
                         }
                     }
                 }
