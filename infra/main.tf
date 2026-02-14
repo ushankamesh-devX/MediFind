@@ -269,7 +269,6 @@ resource "aws_instance" "app_server" {
 
   user_data = <<-EOF
               #!/bin/bash
-              apt-get update
               # Docker installation is handled by Ansible to avoid conflicts
               EOF
 
