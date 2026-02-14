@@ -277,3 +277,16 @@ resource "aws_instance" "app_server" {
     Environment = var.environment
   }
 }
+
+# Elastic IP for EC2 instance (static public IP)
+resource "aws_eip" "app_server" {
+  domain   = "vpc"
+  instance = aws_instance.app_server.id
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-app-eip"
+    Environment = var.environment
+  }
+
+  depends_on = [aws_internet_gateway.main]
+}

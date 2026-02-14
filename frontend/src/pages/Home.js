@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import API_BASE_URL from '../config/api';
 import HeroSection from '../components/Home/HeroSection';
 import WelcomeSection from '../components/Home/WelcomeSection';
 import SearchSection from '../components/Home/SearchSection';
@@ -29,7 +30,7 @@ function Home() {
   const fetchPharmacies = useCallback(async (query = '') => {
     setLoading(true);
     try {
-      const response = await axios.get(`http://localhost:5000/pharmacies${query ? `?search=${query}` : ''}`);
+      const response = await axios.get(`${API_BASE_URL}/pharmacies${query ? `?search=${query}` : ''}`);
 
       // Transform snake_case DB data to camelCase for components
       const transformedData = response.data.map(p => ({

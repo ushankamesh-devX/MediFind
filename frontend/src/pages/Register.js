@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import API_BASE_URL from '../config/api';
 
 function Register() {
   const [email, setEmail] = useState('');
@@ -29,13 +30,13 @@ function Register() {
 
     try {
       // Register
-      await axios.post('http://localhost:5000/register', {
+      await axios.post(`${API_BASE_URL}/register`, {
         email,
         password
       });
 
       // Auto login after registration
-      const loginResponse = await axios.post('http://localhost:5000/login', {
+      const loginResponse = await axios.post(`${API_BASE_URL}/login`, {
         email,
         password
       });
@@ -43,7 +44,7 @@ function Register() {
       const { token, user } = loginResponse.data;
       localStorage.setItem('token', token);
       localStorage.setItem('userEmail', user.email);
-      
+
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed. Please try again.');

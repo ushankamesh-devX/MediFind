@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import axios from 'axios';
+import API_BASE_URL from './config/api';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -40,7 +41,7 @@ function App() {
 
   // Fetch symptoms (protected)
   const fetchSymptoms = useCallback(() => {
-    axios.get('http://localhost:5000/symptoms', getAuthHeaders())
+    axios.get(`${API_BASE_URL}/symptoms`, getAuthHeaders())
       .then(res => setSymptoms(res.data))
       .catch(err => {
         console.error(err);
@@ -66,8 +67,8 @@ function App() {
   // Add symptom (protected)
   const addSymptom = () => {
     if (newSymptom.trim()) {
-      axios.post('http://localhost:5000/symptoms', 
-        { text: newSymptom }, 
+      axios.post(`${API_BASE_URL}/symptoms`,
+        { text: newSymptom },
         getAuthHeaders()
       )
         .then(() => {
@@ -89,7 +90,7 @@ function App() {
     setAuthError('');
 
     try {
-      const response = await axios.post('http://localhost:5000/login', {
+      const response = await axios.post(`${API_BASE_URL}/login`, {
         email,
         password
       });
@@ -97,13 +98,13 @@ function App() {
       const { token, user } = response.data;
       localStorage.setItem('token', token);
       localStorage.setItem('userEmail', user.email);
-      
+
       setIsLoggedIn(true);
       setUserEmail(user.email);
       setShowAuthModal(false);
       setEmail('');
       setPassword('');
-      
+
       fetchSymptoms();
     } catch (err) {
       setAuthError(err.response?.data?.error || 'Login failed');
@@ -116,7 +117,7 @@ function App() {
     setAuthError('');
 
     try {
-      await axios.post('http://localhost:5000/register', {
+      await axios.post(`${API_BASE_URL}/register`, {
         email,
         password
       });
@@ -155,14 +156,14 @@ function App() {
         {/* Public Routes */}
         <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
         <Route path="/register" element={<Register />} />
-        
+
         {/* Protected Routes */}
-        <Route 
-          path="/" 
+        <Route
+          path="/"
           element={
             <ProtectedRoute>
               <div>
-                <Header 
+                <Header
                   isLoggedIn={isLoggedIn}
                   userEmail={userEmail}
                   onLogout={handleLogout}
@@ -170,9 +171,9 @@ function App() {
                 <Home />
               </div>
             </ProtectedRoute>
-          } 
+          }
         />
-        
+
         {/* Redirect to home by default */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
